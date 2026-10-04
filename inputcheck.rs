@@ -10,7 +10,7 @@ mod content;
 mod glob;
 #[path = "source/filter.rs"]
 mod input_filter;
-#[path = "../lib/crypto/sha256.rs"]
+#[path = "lib/crypto/sha256.rs"]
 mod input_sha256;
 #[path = "spec/toml.rs"]
 mod input_toml;

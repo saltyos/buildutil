@@ -9,6 +9,6 @@
 pub mod crc;
 pub mod detseed;
 pub mod ed25519;
-#[path = "../../lib/crypto/sha256.rs"]
+#[path = "../lib/crypto/sha256.rs"]
 pub mod sha256;
 pub mod sha512;

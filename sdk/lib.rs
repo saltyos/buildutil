@@ -32,7 +32,7 @@ pub mod ktap;
 pub mod toml_write;
 pub mod wire;
 
-#[path = "../flake/spec/toml.rs"]
+#[path = "../spec/toml.rs"]
 pub mod toml;
 
 #[path = "../lib/crypto/sha256.rs"]

@@ -25,7 +25,7 @@ mod host;
 mod image;
 mod inputs;
 mod invocation;
-#[path = "../flake-sdk/wire.rs"]
+#[path = "sdk/wire.rs"]
 pub mod sdk_wire;
 pub(crate) use crypto::sha256 as input_sha256;
 pub(crate) use source::filter as input_filter;
