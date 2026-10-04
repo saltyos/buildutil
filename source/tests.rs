@@ -1765,3 +1765,43 @@ fn object_route_defers_to_a_plain_nested_checkout() {
     assert_eq!(routed, oracle);
     std::fs::remove_dir_all(&base).unwrap();
 }
+
+#[test]
+fn a_tracked_submodule_is_a_valid_source_and_an_embedded_checkout_is_not() {
+    let base = temp_path("submodule-source");
+    let source = base.join("source");
+    let parent = base.join("parent");
+    std::fs::create_dir_all(&source).unwrap();
+    std::fs::create_dir_all(&parent).unwrap();
+    assert!(init_git(&source));
+    std::fs::write(source.join("lib.rs"), b"pub fn f() {}\n").unwrap();
+    commit_all(&source, "source");
+    assert!(init_git(&parent));
+    write_filter(&parent, "");
+    std::fs::write(parent.join("buildutil.toml"), b"[lock]\n").unwrap();
+    assert!(git(
+        &parent,
+        &[
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            source.to_str().unwrap(),
+            "vendor/sub",
+        ],
+    ));
+    commit_all(&parent, "parent");
+    assert!(crate::inputs::validate_source(&parent, "vendor/sub/lib.rs").is_ok());
+    let embedded = parent.join("vendor/embedded");
+    std::fs::create_dir_all(&embedded).unwrap();
+    assert!(init_git(&embedded));
+    std::fs::write(embedded.join("lib.rs"), b"pub fn g() {}\n").unwrap();
+    let refused = crate::inputs::validate_source(&parent, "vendor/embedded/lib.rs");
+    assert!(
+        refused
+            .as_ref()
+            .is_err_and(|e| e.contains("enters another repository")),
+        "{refused:?}"
+    );
+    std::fs::remove_dir_all(&base).unwrap();
+}

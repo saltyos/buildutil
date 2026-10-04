@@ -31,6 +31,38 @@ fn repository_root(path: &Path) -> bool {
     std::fs::symlink_metadata(path.join(".git")).is_ok()
 }
 
+/// The nearest repository root strictly above `dir`.
+fn enclosing_repository(dir: &Path) -> Option<std::path::PathBuf> {
+    let mut cur = dir.to_path_buf();
+    while cur.pop() {
+        if repository_root(&cur) {
+            return Some(cur);
+        }
+    }
+    None
+}
+
+/// Whether `dir`, a nested repository root, is a submodule the repository
+/// enclosing it tracks in its `.gitmodules`: part of that repository's
+/// source tree, not a separately declared input. Each submodule is its own
+/// walk root; the walk of its superproject still stops at it.
+pub(crate) fn tracked_submodule(dir: &Path) -> bool {
+    let Some(parent) = enclosing_repository(dir) else {
+        return false;
+    };
+    let rel = rel_below(&parent, dir);
+    let Ok(text) = std::fs::read_to_string(parent.join(".gitmodules")) else {
+        return false;
+    };
+    text.lines().any(|line| {
+        line.trim()
+            .strip_prefix("path")
+            .map(str::trim_start)
+            .and_then(|rest| rest.strip_prefix('='))
+            .is_some_and(|value| value.trim() == rel)
+    })
+}
+
 /// `/`-separated path of `desc` below `ancestor` ("" when they are equal).
 fn rel_below(ancestor: &Path, desc: &Path) -> String {
     desc.strip_prefix(ancestor)

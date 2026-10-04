@@ -18,7 +18,8 @@ pub(crate) fn source_derivation(name: &str, content: &str) -> Result<crate::spec
     Ok(spec)
 }
 
-/// An owner's source declarations cannot read a separately declared repository.
+/// An owner's source declarations cannot read a separately declared repository;
+/// a submodule the owner tracks is its own source, reached as its own root.
 pub(crate) fn validate_source(owner: &Path, relative: &str) -> Result<Vec<String>, String> {
     let owner = owner
         .canonicalize()
@@ -54,7 +55,7 @@ pub(crate) fn validate_source(owner: &Path, relative: &str) -> Result<Vec<String
     }
     let mut ancestor = resolved.clone();
     while ancestor != owner {
-        if ancestor.join(".git").exists() {
+        if ancestor.join(".git").exists() && !crate::source::filter::tracked_submodule(&ancestor) {
             return Err(format!(
                 "source `{relative}` enters another repository without a published input output"
             ));
@@ -101,7 +102,9 @@ fn validate_tree_links(
             if let Ok(resolved) = path.canonicalize() {
                 let mut ancestor = resolved.clone();
                 while ancestor != owner {
-                    if ancestor.join(".git").exists() {
+                    if ancestor.join(".git").exists()
+                        && !crate::source::filter::tracked_submodule(&ancestor)
+                    {
                         return Err(format!(
                             "source symlink {} enters another repository",
                             path.display()
