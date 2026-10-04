@@ -1,0 +1,122 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# buildutil-compose — FHS composition as a store tool outside the engine.
+# The bootstrap-grade tools compile with the stage-0 Rust provider, whose
+# musl rustc links through the bootstrap stage's cc, so no toolchain
+# derivation depends on the host Rust it helps build. The plain library
+# compiles with host Rust, which records its sysroot in the rlib metadata,
+# so its declared provider closure is also its allowed reference closure.
+
+[derivation.lib-buildutil-compose]
+builder = "rustc-crate"
+tool = "rustc"
+host-tool = true
+allowed-references = "closure"
+sources = [
+  "tools/buildutil/compose/lib.rs",
+  "tools/buildutil/compose/glob.rs",
+  "tools/buildutil/compose/manifest.rs",
+  "tools/buildutil/compose/paths.rs",
+  "tools/buildutil/compose/platform.rs",
+  "tools/buildutil/compose/projection.rs",
+  "tools/buildutil/compose/sysroot.rs",
+]
+outputs = ["libbuildutil_compose.rlib"]
+argv = [
+  "--edition=2024",
+  "-O",
+  "--crate-type=lib",
+  "--crate-name=buildutil_compose",
+  "-o", "{out}/libbuildutil_compose.rlib",
+  "{srcroot}/tools/buildutil/compose/lib.rs",
+]
+
+[derivation.lib-buildutil-compose-bootstrap]
+builder = "rustc-crate"
+tool = "rustc"
+bootstrap = true
+host-tool = true
+sources = [
+  "tools/buildutil/compose/lib.rs",
+  "tools/buildutil/compose/glob.rs",
+  "tools/buildutil/compose/manifest.rs",
+  "tools/buildutil/compose/paths.rs",
+  "tools/buildutil/compose/platform.rs",
+  "tools/buildutil/compose/projection.rs",
+  "tools/buildutil/compose/sysroot.rs",
+]
+outputs = ["libbuildutil_compose.rlib"]
+argv = [
+  "--edition=2024",
+  "-O",
+  "--crate-type=lib",
+  "--crate-name=buildutil_compose",
+  "-o", "{out}/libbuildutil_compose.rlib",
+  "{srcroot}/tools/buildutil/compose/lib.rs",
+]
+
+[derivation.lib-buildutil-compose-native]
+builder = "rustc-crate"
+tool = "rustc"
+native-frontend = true
+host-tool = true
+sources = [
+  "tools/buildutil/compose/lib.rs",
+  "tools/buildutil/compose/glob.rs",
+  "tools/buildutil/compose/manifest.rs",
+  "tools/buildutil/compose/paths.rs",
+  "tools/buildutil/compose/platform.rs",
+  "tools/buildutil/compose/projection.rs",
+  "tools/buildutil/compose/sysroot.rs",
+]
+outputs = ["libbuildutil_compose.rlib"]
+argv = [
+  "--edition=2024",
+  "-O",
+  "--crate-type=lib",
+  "--crate-name=buildutil_compose",
+  "--remap-path-prefix", "{buildroot-abs}=/build",
+  "-o", "{out}/libbuildutil_compose.rlib",
+  "{srcroot}/tools/buildutil/compose/lib.rs",
+]
+
+[derivation.buildutil-compose]
+builder = "rustc-crate"
+tool = "rustc"
+bootstrap = true
+extra-tools = ["cc"]
+host-tool = true
+allowed-references = "closure"
+sources = ["tools/buildutil/compose/bin/buildutil_compose.rs"]
+deps = ["lib-buildutil-compose-bootstrap"]
+outputs = ["buildutil-compose"]
+argv = [
+  "--edition=2024",
+  "-O",
+  "--crate-name=buildutil_compose",
+  "-C", "link-arg=--target={build.host.triple}",
+  "--extern", "buildutil_compose={dep:lib-buildutil-compose-bootstrap}/libbuildutil_compose.rlib",
+  "-L", "{dep:lib-buildutil-compose-bootstrap}",
+  "-o", "{out}/buildutil-compose",
+  "{srcroot}/tools/buildutil/compose/bin/buildutil_compose.rs",
+]
+
+[derivation.buildutil-sysroot]
+builder = "rustc-crate"
+tool = "rustc"
+bootstrap = true
+extra-tools = ["cc"]
+host-tool = true
+allowed-references = "closure"
+sources = ["tools/buildutil/compose/bin/buildutil_sysroot.rs"]
+deps = ["lib-buildutil-compose-bootstrap"]
+outputs = ["buildutil-sysroot"]
+argv = [
+  "--edition=2024",
+  "-O",
+  "--crate-name=buildutil_sysroot",
+  "-C", "link-arg=--target={build.host.triple}",
+  "--extern", "buildutil_compose={dep:lib-buildutil-compose-bootstrap}/libbuildutil_compose.rlib",
+  "-L", "{dep:lib-buildutil-compose-bootstrap}",
+  "-o", "{out}/buildutil-sysroot",
+  "{srcroot}/tools/buildutil/compose/bin/buildutil_sysroot.rs",
+]

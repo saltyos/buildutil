@@ -1,0 +1,15 @@
+# Basic option types: a bool, an int with range, a string. Exercises
+# default resolution and a plain override.
+[option.BUILD_KERNEL]
+type = "bool"
+default = true
+
+[option.WORKER_LIMIT]
+type = "int"
+default = 16
+min = 1
+max = 256
+
+[option.GREETING]
+type = "string"
+default = "hello"

@@ -1,0 +1,73 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# buildutil_sdk — the crate every buildutil module links. Store modules (builders,
+# generators, the formatter and build-host apps) link the bootstrap-grade
+# library, built with the stage-0 Rust provider, so no module depends on
+# the host Rust toolchain it may help produce. Client apps link the
+# self-tool library, built from the client's ambient compiler. The SDK
+# shares its TOML reader and SHA-256 with buildutil, which compiles the same
+# wire file, so both sides of the module boundary read one format.
+
+[derivation.lib-buildutil-sdk]
+builder = "rustc-crate"
+tool = "rustc"
+bootstrap = true
+host-tool = true
+src-dirs = ["tools/buildutil/sdk"]
+sources = ["tools/buildutil/spec/toml.rs", "tools/buildutil/lib/crypto/sha256.rs"]
+outputs = ["libbuildutil_sdk.rlib"]
+argv = [
+  "--edition=2024",
+  "-O",
+  "--crate-type=lib",
+  "--crate-name=buildutil_sdk",
+  "-o", "{out}/libbuildutil_sdk.rlib",
+  "{srcroot}/tools/buildutil/sdk/lib.rs",
+]
+
+[derivation.lib-buildutil-sdk-native]
+builder = "rustc-crate"
+tool = "rustc"
+native-frontend = true
+host-tool = true
+src-dirs = ["tools/buildutil/sdk"]
+sources = ["tools/buildutil/spec/toml.rs", "tools/buildutil/lib/crypto/sha256.rs"]
+outputs = ["libbuildutil_sdk.rlib"]
+argv = [
+  "--edition=2024",
+  "-O",
+  "--crate-type=lib",
+  "--crate-name=buildutil_sdk",
+  "--remap-path-prefix", "{buildroot-abs}=/build",
+  "-o", "{out}/libbuildutil_sdk.rlib",
+  "{srcroot}/tools/buildutil/sdk/lib.rs",
+]
+
+[derivation.test-buildutil-sdk-bin]
+builder = "rustc-crate"
+tool = "rustc"
+bootstrap = true
+extra-tools = ["cc"]
+host-tool = true
+allowed-references = "closure"
+src-dirs = ["tools/buildutil/sdk"]
+sources = ["tools/buildutil/spec/toml.rs", "tools/buildutil/lib/crypto/sha256.rs"]
+outputs = ["buildutil-sdk-tests"]
+argv = [
+  "--edition=2024", "--test", "--crate-name=buildutil_sdk_tests", "-C", "opt-level=1",
+  "-C", "link-arg=--target={build.host.triple}",
+  "--remap-path-prefix", "{srcroot-abs}=/src",
+  "-o", "{out}/buildutil-sdk-tests", "{srcroot}/tools/buildutil/sdk/lib.rs",
+]
+
+# A check's store output is a fixed pass stamp; the test log is a retained
+# artifact beside the build log, replayed to the build screen.
+[derivation.test-buildutil-sdk]
+builder = "script-dag"
+tool = "ninja"
+deps = ["test-buildutil-sdk-bin"]
+outputs = ["sdk-tests.stamp"]
+[[derivation.test-buildutil-sdk.step]]
+tool = "sh"
+argv = ["-c", "log=\"$BUILDUTIL_ARTIFACTS/sdk-tests.log\"; \"$0\" --test-threads=1 > \"$log\" 2>&1; result=$?; while IFS= read -r line || [ -n \"$line\" ]; do printf '%s\\n' \"$line\" >&2; done < \"$log\"; [ \"$result\" -eq 0 ] && printf 'pass\\n'; exit \"$result\"", "{dep:test-buildutil-sdk-bin}/buildutil-sdk-tests"]
+capture = "{out}/sdk-tests.stamp"
+outputs = ["{out}/sdk-tests.stamp"]

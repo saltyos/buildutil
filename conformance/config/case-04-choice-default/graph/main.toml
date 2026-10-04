@@ -1,0 +1,9 @@
+# A mandatory choice with a default member; no override, so the default
+# member is active and the others are off.
+[choice.log_level]
+title = "Log level"
+default = "LEVEL_INFO"
+
+  [choice.log_level.option.LEVEL_ERROR]
+  [choice.log_level.option.LEVEL_WARN]
+  [choice.log_level.option.LEVEL_INFO]

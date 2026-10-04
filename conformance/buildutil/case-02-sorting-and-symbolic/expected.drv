@@ -1,0 +1,26 @@
+buildutil-drv
+format: 5
+name: widget
+arch: x86_64
+builder: rustc-crate
+tool: cc=sha256:aa;cc 19
+tool: rustc=sha256:zz;rustc 1.94.1
+env: AAA=first
+env: ZZZ=last
+src: a/early.rs=sha256:h1
+src: z/late.rs=sha256:h2
+srcdir: src/tree=sha256:dh
+allowed-refs: none
+dep: aaa-dep=sha256:aaahash
+dep: libcore=sha256:corehash
+config: ARCH=x86_64
+config: DEBUG_SYMBOLS=true
+argv: rustc
+argv: --extern
+argv: core={dep:libcore}/libcore.rmeta
+argv: -L
+argv: {dep:libcore}
+argv: -o
+argv: {out}/widget
+argv: {srcroot}/main.rs
+out: widget

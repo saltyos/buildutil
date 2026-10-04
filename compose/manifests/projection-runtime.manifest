@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: GPL-2.0-only
+schema buildutil-compose-v1
+layout fhs
+filter runtime
+setup-env-path buildutil-support/setup-env
+emit-setup-env false
+emit-provenance true
+exclude usr/include/**
+exclude usr/lib/**/*.a
+exclude usr/lib/**/*.la
+exclude usr/lib/pkgconfig/**
+exclude usr/lib/*/pkgconfig/**
+exclude usr/lib/cmake/**
+exclude usr/lib/*/cmake/**
+exclude usr/share/aclocal/**
+exclude usr/share/pkgconfig/**
+exclude usr/share/man/**
+exclude usr/share/info/**
+exclude usr/share/doc/**
+exclude usr/share/gtk-doc/**
+exclude usr/share/locale/**

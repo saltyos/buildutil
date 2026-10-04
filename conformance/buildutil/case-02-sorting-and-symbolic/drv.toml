@@ -1,0 +1,15 @@
+# Declares tools/env/srcs/srcdirs/deps/config OUT of sorted order; the
+# preimage must sort each section while keeping argv order, and must keep
+# {out}/{srcroot}/{dep:*} tokens symbolic (no store paths in identity).
+name = "widget"
+arch = "x86_64"
+builder = "rustc-crate"
+tools = ["rustc=sha256:zz;rustc 1.94.1", "cc=sha256:aa;cc 19"]
+env = ["ZZZ=last", "AAA=first"]
+srcs = ["z/late.rs=h2", "a/early.rs=h1"]
+srcdirs = ["src/tree=dh"]
+deps = ["libcore=corehash", "aaa-dep=aaahash"]
+config = ["DEBUG_SYMBOLS=true", "ARCH=x86_64"]
+argv = ["rustc", "--extern", "core={dep:libcore}/libcore.rmeta", "-L", "{dep:libcore}", "-o", "{out}/widget", "{srcroot}/main.rs"]
+plan = []
+outputs = ["widget"]

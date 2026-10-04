@@ -1,0 +1,10 @@
+# When FEATURE_A resolves on, its select forces FEATURE_B on regardless of
+# FEATURE_B's own default.
+[option.FEATURE_A]
+type = "bool"
+default = false
+select = ["FEATURE_B"]
+
+[option.FEATURE_B]
+type = "bool"
+default = false

@@ -1,0 +1,182 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# buildutil builds itself as a store tool. Bootstrap-grade derivations use
+# buildutil-bootstrap (compiled by the fixed stage0-rust provider) so toolchain
+# assembly can call buildutil helper subcommands without depending on the final
+# rustc it is building. Normal derivations use buildutil, built by the store-native
+# final host rustc. The checked-in tools/buildutil/bootstrap.ninja still only
+# bootstraps the outer engine wrapper; builder authority comes from these
+# derivations.
+
+[derivation.test-buildutil-bin]
+builder = "rustc-crate"
+tool = "rustc"
+extra-tools = ["cc"]
+host-tool = true
+allowed-references = "closure"
+src-dirs = ["tools/buildutil"]
+sources = ["tools/buildutil/lib/crypto/sha256.rs", "tools/buildutil/sdk/wire.rs"]
+deps = ["lib-mica", "lib-buildutil-compose"]
+outputs = ["buildutil-contract-tests"]
+argv = [
+  "--edition=2024", "--test", "--crate-name=buildutil_contract_tests", "-C", "opt-level=1",
+  "--remap-path-prefix", "{srcroot-abs}=/src",
+  "--extern", "mica={dep:lib-mica}/libmica.rlib", "-L", "{dep:lib-mica}",
+  "--extern", "buildutil_compose={dep:lib-buildutil-compose}/libbuildutil_compose.rlib",
+  "-L", "{dep:lib-buildutil-compose}",
+  "-o", "{out}/buildutil-contract-tests", "{srcroot}/tools/buildutil/main.rs",
+]
+
+[derivation.test-buildutil-saltyfs]
+builder = "script-dag"
+tool = "ninja"
+deps = ["test-buildutil-bin"]
+outputs = ["saltyfs-image.stamp"]
+
+# A check's store output is a fixed pass stamp; the test log is a retained
+# artifact beside the build log, replayed to the build screen.
+[[derivation.test-buildutil-saltyfs.step]]
+tool = "sh"
+argv = ["-c", "log=\"$BUILDUTIL_ARTIFACTS/saltyfs-image.log\"; \"$0\" image::saltyfs:: --test-threads=1 > \"$log\" 2>&1; result=$?; while IFS= read -r line || [ -n \"$line\" ]; do printf '%s\\n' \"$line\" >&2; done < \"$log\"; [ \"$result\" -eq 0 ] && printf 'pass\\n'; exit \"$result\"", "{dep:test-buildutil-bin}/buildutil-contract-tests"]
+capture = "{out}/saltyfs-image.stamp"
+outputs = ["{out}/saltyfs-image.stamp"]
+
+[derivation.test-buildutil-contract]
+builder = "script-dag"
+tool = "ninja"
+host-tool = true
+extra-tools = ["clang", "ld.lld", "llvm-dis", "llvm-link", "llvm-objdump", "llvm-objcopy"]
+deps = ["test-buildutil-bin", "bootstrap-seed"]
+outputs = ["contract-tests.stamp"]
+[[derivation.test-buildutil-contract.step]]
+tool = "sh"
+argv = ["-c", "log=\"$BUILDUTIL_ARTIFACTS/contract-tests.log\"; BUILDUTIL_CONTRACT_SEED=\"$1\" BUILDUTIL_CONTRACT_BUILD_HOST=\"$2\" \"$0\" required_ --test-threads=1 > \"$log\" 2>&1; result=$?; while IFS= read -r line || [ -n \"$line\" ]; do printf '%s\\n' \"$line\" >&2; done < \"$log\"; [ \"$result\" -eq 0 ] && printf 'pass\\n'; exit \"$result\"", "{dep:test-buildutil-bin}/buildutil-contract-tests", "{dep-abs:bootstrap-seed}", "{build.host.triple}"]
+capture = "{out}/contract-tests.stamp"
+outputs = ["{out}/contract-tests.stamp"]
+
+[derivation.test-buildutil]
+builder = "script-dag"
+tool = "ninja"
+host-tool = true
+extra-tools = ["clang", "ld.lld", "llvm-dis", "llvm-link", "llvm-objdump", "llvm-objcopy", "git"]
+deps = ["test-buildutil-bin", "bootstrap-seed"]
+outputs = ["self-tests.stamp"]
+[[derivation.test-buildutil.step]]
+tool = "sh"
+argv = ["-c", "log=\"$BUILDUTIL_ARTIFACTS/self-tests.log\"; BUILDUTIL_CONTRACT_SEED=\"$1\" BUILDUTIL_CONTRACT_BUILD_HOST=\"$2\" \"$0\" --test-threads=1 > \"$log\" 2>&1; result=$?; while IFS= read -r line || [ -n \"$line\" ]; do printf '%s\\n' \"$line\" >&2; done < \"$log\"; [ \"$result\" -eq 0 ] && printf 'pass\\n'; exit \"$result\"", "{dep:test-buildutil-bin}/buildutil-contract-tests", "{dep-abs:bootstrap-seed}", "{build.host.triple}"]
+capture = "{out}/self-tests.stamp"
+outputs = ["{out}/self-tests.stamp"]
+
+[derivation.buildutil-bootstrap]
+builder = "rustc-crate"
+tool = "rustc"
+bootstrap = true
+extra-tools = ["cc"]
+host-tool = true
+allowed-references = "closure"
+src-dirs = ["tools/buildutil"]
+sources = ["tools/buildutil/lib/crypto/sha256.rs", "tools/buildutil/sdk/wire.rs"]
+deps = ["lib-mica-bootstrap", "lib-buildutil-compose-bootstrap"]
+outputs = ["buildutil"]
+argv = [
+  "--edition=2024",
+  "-O",
+  "--crate-name=buildutil",
+  "-C", "link-arg=--target={build.host.triple}",
+  "--extern", "mica={dep:lib-mica-bootstrap}/libmica.rlib",
+  "-L", "{dep:lib-mica-bootstrap}",
+  "--extern", "buildutil_compose={dep:lib-buildutil-compose-bootstrap}/libbuildutil_compose.rlib",
+  "-L", "{dep:lib-buildutil-compose-bootstrap}",
+  "-o", "{out}/buildutil",
+  "{srcroot}/tools/buildutil/main.rs",
+]
+
+[derivation.buildutil]
+builder = "rustc-crate"
+tool = "rustc"
+extra-tools = ["cc"]
+host-tool = true
+allowed-references = "closure"
+src-dirs = ["tools/buildutil"]
+sources = ["tools/buildutil/lib/crypto/sha256.rs", "tools/buildutil/sdk/wire.rs"]
+# The engine and configuration commands link the shared mica language library.
+deps = ["lib-mica", "lib-buildutil-compose"]
+outputs = ["buildutil"]
+argv = [
+  "--edition=2024",
+  "-O",
+  "--crate-name=buildutil",
+  "--extern", "mica={dep:lib-mica}/libmica.rlib",
+  "-L", "{dep:lib-mica}",
+  "--extern", "buildutil_compose={dep:lib-buildutil-compose}/libbuildutil_compose.rlib",
+  "-L", "{dep:lib-buildutil-compose}",
+  "-o", "{out}/buildutil",
+  "{srcroot}/tools/buildutil/main.rs",
+]
+
+# The native frontend. This target is visible only through the root
+# [native-frontend] scoped load; it never changes the Linux store `buildutil` or
+# `buildutil-bootstrap` derivations above. Its rustc and linker are the explicit
+# ambient providers captured by bootstrap.ninja.
+[derivation.lib-mica-native]
+builder = "rustc-crate"
+tool = "rustc"
+native-frontend = true
+host-tool = true
+src-dirs = ["tools/buildutil/lib/mica"]
+outputs = ["libmica.rlib"]
+argv = [
+  "--edition=2024",
+  "-O",
+  "--crate-type=lib",
+  "--crate-name=mica",
+  "--remap-path-prefix", "{buildroot-abs}=/build",
+  "-o", "{out}/libmica.rlib",
+  "{srcroot}/tools/buildutil/lib/mica/lib.rs",
+]
+
+[derivation.lib-mica]
+builder = "rustc-crate"
+tool = "rustc"
+host-tool = true
+allowed-references = "closure"
+src-dirs = ["tools/buildutil/lib/mica"]
+outputs = ["libmica.rlib"]
+argv = ["--edition=2024", "-O", "--crate-type=lib", "--crate-name=mica", "-o", "{out}/libmica.rlib", "{srcroot}/tools/buildutil/lib/mica/lib.rs"]
+
+[derivation.lib-mica-bootstrap]
+builder = "rustc-crate"
+tool = "rustc"
+bootstrap = true
+host-tool = true
+src-dirs = ["tools/buildutil/lib/mica"]
+outputs = ["libmica.rlib"]
+argv = ["--edition=2024", "-O", "--crate-type=lib", "--crate-name=mica", "-o", "{out}/libmica.rlib", "{srcroot}/tools/buildutil/lib/mica/lib.rs"]
+
+[derivation.buildutil-native]
+builder = "rustc-crate"
+tool = "rustc"
+native-frontend = true
+extra-tools = ["cc"]
+host-tool = true
+src-dirs = ["tools/buildutil"]
+sources = ["tools/buildutil/lib/crypto/sha256.rs", "tools/buildutil/sdk/wire.rs"]
+deps = ["lib-mica-native", "lib-buildutil-compose-native"]
+outputs = ["buildutil"]
+argv = [
+  "--edition=2024",
+  "-O",
+  "--crate-name=buildutil",
+  "-C", "linker=cc",
+  "--remap-path-prefix", "{buildroot-abs}=/build",
+  "--extern", "mica={dep:lib-mica-native}/libmica.rlib",
+  "-L", "{dep:lib-mica-native}",
+  "--extern", "buildutil_compose={dep:lib-buildutil-compose-native}/libbuildutil_compose.rlib",
+  "-L", "{dep:lib-buildutil-compose-native}",
+  "-o", "{out}/buildutil",
+  "{srcroot}/tools/buildutil/main.rs",
+]
+
+[configuration]
+graph = "config"
+arch-option = "ARCH"
+profile-option = "DEBUG_SYMBOLS"

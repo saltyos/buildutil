@@ -1,0 +1,59 @@
+buildutil-plan
+format: 2
+arch: aarch64
+build-host: aarch64-unknown-linux-musl
+filter: buildutilignore-v1
+filter-hash: 1111111111111111111111111111111111111111111111111111111111111111
+git-rev: 0123456789ab
+git-dirty: true
+target: image-disk-bios
+target: image-disk-bios@998b4e6096b50070
+bootstrap: x buildutil sha256:1212121212121212121212121212121212121212121212121212121212121212
+drv kernite
+arch: aarch64
+builder: rustc-crate
+tool: rustc=store:host-rust:bin/rustc
+dep: host-rust
+config: KERNEL_LOG_LEVEL=info
+argv: rustc
+out: kernite.elf
+exec-tool: rustc
+exec-argv: rustc
+exec-host-tool: false
+exec-allowed-refs: none
+end
+drv host-rust
+arch: host-aarch64-unknown-linux-musl
+builder: untar
+argv: fixed-output:sha256:1313131313131313131313131313131313131313131313131313131313131313
+out: bin/
+exec-tool: buildutil
+exec-env: BUILDUTIL_FIXED_SHA256=1313131313131313131313131313131313131313131313131313131313131313
+exec-argv: buildutil
+exec-host-tool: true
+exec-allowed-refs: closure
+end
+drv image-disk-bios
+arch: aarch64
+builder: script-dag
+dep: kernite
+config: TEST_AUTOSHUTDOWN=false
+argv: buildutil
+out: saltyos.img
+exec-tool: buildutil
+exec-argv: buildutil
+exec-host-tool: false
+exec-allowed-refs: none
+end
+drv image-disk-bios@998b4e6096b50070
+arch: aarch64
+builder: script-dag
+dep: kernite
+config: TEST_AUTOSHUTDOWN=true
+argv: buildutil
+out: saltyos.img
+exec-tool: buildutil
+exec-argv: buildutil
+exec-host-tool: false
+exec-allowed-refs: none
+end

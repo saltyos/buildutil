@@ -1,0 +1,10 @@
+# DERIVED is visible only while BASE is on; when BASE is overridden off,
+# DERIVED is hidden and pinned to its off value.
+[option.BASE]
+type = "bool"
+default = true
+
+[option.DERIVED]
+type = "bool"
+default = true
+depends_on = "BASE"

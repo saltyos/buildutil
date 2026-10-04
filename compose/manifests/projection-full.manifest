@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0-only
+schema buildutil-compose-v1
+layout fhs
+filter full
+setup-env-path buildutil-support/setup-env
+emit-setup-env true
+emit-provenance false

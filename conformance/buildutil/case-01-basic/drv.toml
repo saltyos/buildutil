@@ -1,0 +1,14 @@
+# A minimal single-tool derivation. Pins the preimage header, the sorted
+# tool/env/src sections, and symbolic {out} preservation in argv.
+name = "uapi-src"
+arch = "x86_64"
+builder = "bindgen"
+tools = ["bindgen=sha256:aa;bindgen 0.72.0"]
+env = ["LC_ALL=C", "SOURCE_DATE_EPOCH=1"]
+srcs = ["kernite/include/uapi/bindgen.h=bb"]
+srcdirs = []
+deps = []
+config = []
+argv = ["bindgen", "--use-core", "--output", "{out}/uapi.rs"]
+plan = []
+outputs = ["uapi.rs"]

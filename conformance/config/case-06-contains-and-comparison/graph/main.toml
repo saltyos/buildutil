@@ -1,0 +1,22 @@
+# Exercises the two grammar features the unified predicate language adds
+# beyond bare atoms: `contains` (comma-list membership) and `>=` (integer
+# comparison), inside guard-default chains. WANT_MM and BIG are plain bools
+# (not computed) so their resolved values appear in config.keyval and the
+# golden actually pins the evaluation result.
+[option.MODULES]
+type = "string"
+default = "mm,ipc"
+
+[option.WANT_MM]
+type = "bool"
+default = "true if MODULES contains \"mm\" else false"
+
+[option.NCPU]
+type = "int"
+default = 16
+min = 1
+max = 256
+
+[option.BIG]
+type = "bool"
+default = "true if NCPU >= 32 else false"

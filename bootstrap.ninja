@@ -1,0 +1,638 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# tools/buildutil/bootstrap.ninja — FROZEN. Regenerate: buildutil gen
+# Stage 0 builds minibuildutil; minibuildutil realizes the full native frontend.
+builddir = .buildutil/tmp/bootstrap-ninja
+rule rustcid
+  command = outdir=$$(dirname $out) && mkdir -p $$outdir && tmp=$out.tmp.$$$$ && { printf 'rustc-command: %s\n' "$${BUILDUTIL_RUSTC:-rustc}"; command -v "$${BUILDUTIL_RUSTC:-rustc}" 2>/dev/null | sed 's/^/rustc-path: /'; "$${BUILDUTIL_RUSTC:-rustc}" -vV; printf 'linker-command: %s\n' "$${BUILDUTIL_LINKER:-cc}"; command -v "$${BUILDUTIL_LINKER:-cc}" 2>/dev/null | sed 's/^/linker-path: /'; "$${BUILDUTIL_LINKER:-cc}" --version 2>/dev/null || true; } > $$tmp && if test -f $out && cmp -s $out $$tmp; then rm $$tmp; else mv $$tmp $out; fi
+  description = BOOTSTRAP $out
+  restat = 1
+rule inputcheckc
+  command = $${BUILDUTIL_RUSTC:-rustc} --edition=2024 -O -o $out $in
+  description = BOOTSTRAP $out
+rule micac
+  command = $${BUILDUTIL_RUSTC:-rustc} --edition=2024 -O --crate-type=lib --crate-name=mica -o $out $in
+  description = BOOTSTRAP $out
+rule minibuildutilc
+  command = $${BUILDUTIL_RUSTC:-rustc} --edition=2024 -O --extern mica=$mica_rlib -L $mica_dir -o $out $in
+  description = BOOTSTRAP $out
+rule selfhost
+  command = $minibuildutil --repo-root "$${BUILDUTIL_SELFHOST_REPO_ROOT:-.}" --state-root "$${BUILDUTIL_SELFHOST_STATE_ROOT:-.buildutil}" --rustc "$${BUILDUTIL_RUSTC:-rustc}" --linker "$${BUILDUTIL_LINKER:-cc}" --rustc-identity $rustc_identity --output $out --exec-host $exec_host
+  description = SELFHOST $out
+rule bootstrap_no_default
+  command = echo 'bootstrap: use ./buildutil, or name .buildutil/bootstrap/<exec-host>/buildutil explicitly' >&2; false
+  description = BOOTSTRAP select host
+build FORCE: phony
+build bootstrap-select-host: bootstrap_no_default
+build .buildutil/bootstrap/x86_64-apple-darwin/rustc.vv: rustcid FORCE
+build .buildutil/bootstrap/x86_64-apple-darwin/inputcheck: inputcheckc tools/buildutil/inputcheck.rs | .buildutil/bootstrap/x86_64-apple-darwin/rustc.vv $
+    tools/buildutil/inputs/bootstrap.rs $
+    tools/buildutil/inputs/codec.rs $
+    tools/buildutil/inputs/content.rs $
+    tools/buildutil/source/filter.rs $
+    tools/buildutil/spec/toml.rs $
+    tools/buildutil/glob/mod.rs $
+    tools/buildutil/lib/crypto/sha256.rs
+build .buildutil/bootstrap/x86_64-apple-darwin/libmica.rlib: micac tools/buildutil/lib/mica/lib.rs | .buildutil/bootstrap/x86_64-apple-darwin/rustc.vv $
+    tools/buildutil/lib/mica/ast.rs $
+    tools/buildutil/lib/mica/eval.rs $
+    tools/buildutil/lib/mica/lexer.rs $
+    tools/buildutil/lib/mica/parser.rs $
+    tools/buildutil/lib/mica/tests.rs $
+    tools/buildutil/lib/mica/vercmp.rs
+build .buildutil/bootstrap/x86_64-apple-darwin/minibuildutil: minibuildutilc tools/buildutil/minibuildutil.rs | .buildutil/bootstrap/x86_64-apple-darwin/libmica.rlib .buildutil/bootstrap/x86_64-apple-darwin/rustc.vv $
+    tools/buildutil/crypto/crc.rs $
+    tools/buildutil/crypto/detseed.rs $
+    tools/buildutil/crypto/ed25519.rs $
+    tools/buildutil/crypto/mod.rs $
+    tools/buildutil/crypto/sha512.rs $
+    tools/buildutil/eval/cache.rs $
+    tools/buildutil/eval/graph.rs $
+    tools/buildutil/eval/mod.rs $
+    tools/buildutil/eval/ninja_emit.rs $
+    tools/buildutil/eval/observe.rs $
+    tools/buildutil/eval/plan/bootstrap.rs $
+    tools/buildutil/eval/plan/check.rs $
+    tools/buildutil/eval/plan/mod.rs $
+    tools/buildutil/eval/plan/tests.rs $
+    tools/buildutil/eval/plan/wire.rs $
+    tools/buildutil/events/mod.rs $
+    tools/buildutil/exec/build.rs $
+    tools/buildutil/exec/builder.rs $
+    tools/buildutil/exec/depinfo.rs $
+    tools/buildutil/exec/env.rs $
+    tools/buildutil/exec/inflate.rs $
+    tools/buildutil/exec/input_fetch.rs $
+    tools/buildutil/exec/jobserver.rs $
+    tools/buildutil/exec/json.rs $
+    tools/buildutil/exec/mod.rs $
+    tools/buildutil/exec/module.rs $
+    tools/buildutil/exec/output.rs $
+    tools/buildutil/exec/pool.rs $
+    tools/buildutil/exec/refscan.rs $
+    tools/buildutil/exec/report.rs $
+    tools/buildutil/exec/sandbox.rs $
+    tools/buildutil/exec/stage.rs $
+    tools/buildutil/exec/tests.rs $
+    tools/buildutil/exec/tokens.rs $
+    tools/buildutil/exec/trace.rs $
+    tools/buildutil/exec/untar.rs $
+    tools/buildutil/glob/mod.rs $
+    tools/buildutil/inputs/bootstrap.rs $
+    tools/buildutil/inputs/codec.rs $
+    tools/buildutil/inputs/content.rs $
+    tools/buildutil/inputs/mod.rs $
+    tools/buildutil/invocation/mod.rs $
+    tools/buildutil/log/mod.rs $
+    tools/buildutil/paths/mod.rs $
+    tools/buildutil/platform/mod.rs $
+    tools/buildutil/source/filehash.rs $
+    tools/buildutil/source/filter.rs $
+    tools/buildutil/source/git.rs $
+    tools/buildutil/source/mod.rs $
+    tools/buildutil/source/statcache.rs $
+    tools/buildutil/source/tests.rs $
+    tools/buildutil/source/tree.rs $
+    tools/buildutil/source/worktree.rs $
+    tools/buildutil/spec/address.rs $
+    tools/buildutil/spec/builders.rs $
+    tools/buildutil/spec/configres.rs $
+    tools/buildutil/spec/inputs.rs $
+    tools/buildutil/spec/kinds.rs $
+    tools/buildutil/spec/mod.rs $
+    tools/buildutil/spec/modules.rs $
+    tools/buildutil/spec/required_checks.rs $
+    tools/buildutil/spec/stages.rs $
+    tools/buildutil/spec/tables.rs $
+    tools/buildutil/spec/tests.rs $
+    tools/buildutil/spec/toml.rs $
+    tools/buildutil/state/mod.rs $
+    tools/buildutil/store/derivation.rs $
+    tools/buildutil/store/gc.rs $
+    tools/buildutil/store/maintain.rs $
+    tools/buildutil/store/mod.rs $
+    tools/buildutil/store/register.rs $
+    tools/buildutil/store/remote.rs $
+    tools/buildutil/store/substitute.rs $
+    tools/buildutil/store/tests.rs $
+    tools/buildutil/term/mod.rs $
+    tools/buildutil/term/view.rs $
+    tools/buildutil/tools/mod.rs $
+    tools/buildutil/lib/crypto/sha256.rs $
+    tools/buildutil/sdk/wire.rs
+  mica_rlib = .buildutil/bootstrap/x86_64-apple-darwin/libmica.rlib
+  mica_dir = .buildutil/bootstrap/x86_64-apple-darwin
+build .buildutil/bootstrap/x86_64-apple-darwin/buildutil: selfhost .buildutil/bootstrap/x86_64-apple-darwin/minibuildutil .buildutil/bootstrap/x86_64-apple-darwin/rustc.vv FORCE
+  minibuildutil = .buildutil/bootstrap/x86_64-apple-darwin/minibuildutil
+  rustc_identity = .buildutil/bootstrap/x86_64-apple-darwin/rustc.vv
+  exec_host = x86_64-apple-darwin
+build .buildutil/bootstrap/aarch64-apple-darwin/rustc.vv: rustcid FORCE
+build .buildutil/bootstrap/aarch64-apple-darwin/inputcheck: inputcheckc tools/buildutil/inputcheck.rs | .buildutil/bootstrap/aarch64-apple-darwin/rustc.vv $
+    tools/buildutil/inputs/bootstrap.rs $
+    tools/buildutil/inputs/codec.rs $
+    tools/buildutil/inputs/content.rs $
+    tools/buildutil/source/filter.rs $
+    tools/buildutil/spec/toml.rs $
+    tools/buildutil/glob/mod.rs $
+    tools/buildutil/lib/crypto/sha256.rs
+build .buildutil/bootstrap/aarch64-apple-darwin/libmica.rlib: micac tools/buildutil/lib/mica/lib.rs | .buildutil/bootstrap/aarch64-apple-darwin/rustc.vv $
+    tools/buildutil/lib/mica/ast.rs $
+    tools/buildutil/lib/mica/eval.rs $
+    tools/buildutil/lib/mica/lexer.rs $
+    tools/buildutil/lib/mica/parser.rs $
+    tools/buildutil/lib/mica/tests.rs $
+    tools/buildutil/lib/mica/vercmp.rs
+build .buildutil/bootstrap/aarch64-apple-darwin/minibuildutil: minibuildutilc tools/buildutil/minibuildutil.rs | .buildutil/bootstrap/aarch64-apple-darwin/libmica.rlib .buildutil/bootstrap/aarch64-apple-darwin/rustc.vv $
+    tools/buildutil/crypto/crc.rs $
+    tools/buildutil/crypto/detseed.rs $
+    tools/buildutil/crypto/ed25519.rs $
+    tools/buildutil/crypto/mod.rs $
+    tools/buildutil/crypto/sha512.rs $
+    tools/buildutil/eval/cache.rs $
+    tools/buildutil/eval/graph.rs $
+    tools/buildutil/eval/mod.rs $
+    tools/buildutil/eval/ninja_emit.rs $
+    tools/buildutil/eval/observe.rs $
+    tools/buildutil/eval/plan/bootstrap.rs $
+    tools/buildutil/eval/plan/check.rs $
+    tools/buildutil/eval/plan/mod.rs $
+    tools/buildutil/eval/plan/tests.rs $
+    tools/buildutil/eval/plan/wire.rs $
+    tools/buildutil/events/mod.rs $
+    tools/buildutil/exec/build.rs $
+    tools/buildutil/exec/builder.rs $
+    tools/buildutil/exec/depinfo.rs $
+    tools/buildutil/exec/env.rs $
+    tools/buildutil/exec/inflate.rs $
+    tools/buildutil/exec/input_fetch.rs $
+    tools/buildutil/exec/jobserver.rs $
+    tools/buildutil/exec/json.rs $
+    tools/buildutil/exec/mod.rs $
+    tools/buildutil/exec/module.rs $
+    tools/buildutil/exec/output.rs $
+    tools/buildutil/exec/pool.rs $
+    tools/buildutil/exec/refscan.rs $
+    tools/buildutil/exec/report.rs $
+    tools/buildutil/exec/sandbox.rs $
+    tools/buildutil/exec/stage.rs $
+    tools/buildutil/exec/tests.rs $
+    tools/buildutil/exec/tokens.rs $
+    tools/buildutil/exec/trace.rs $
+    tools/buildutil/exec/untar.rs $
+    tools/buildutil/glob/mod.rs $
+    tools/buildutil/inputs/bootstrap.rs $
+    tools/buildutil/inputs/codec.rs $
+    tools/buildutil/inputs/content.rs $
+    tools/buildutil/inputs/mod.rs $
+    tools/buildutil/invocation/mod.rs $
+    tools/buildutil/log/mod.rs $
+    tools/buildutil/paths/mod.rs $
+    tools/buildutil/platform/mod.rs $
+    tools/buildutil/source/filehash.rs $
+    tools/buildutil/source/filter.rs $
+    tools/buildutil/source/git.rs $
+    tools/buildutil/source/mod.rs $
+    tools/buildutil/source/statcache.rs $
+    tools/buildutil/source/tests.rs $
+    tools/buildutil/source/tree.rs $
+    tools/buildutil/source/worktree.rs $
+    tools/buildutil/spec/address.rs $
+    tools/buildutil/spec/builders.rs $
+    tools/buildutil/spec/configres.rs $
+    tools/buildutil/spec/inputs.rs $
+    tools/buildutil/spec/kinds.rs $
+    tools/buildutil/spec/mod.rs $
+    tools/buildutil/spec/modules.rs $
+    tools/buildutil/spec/required_checks.rs $
+    tools/buildutil/spec/stages.rs $
+    tools/buildutil/spec/tables.rs $
+    tools/buildutil/spec/tests.rs $
+    tools/buildutil/spec/toml.rs $
+    tools/buildutil/state/mod.rs $
+    tools/buildutil/store/derivation.rs $
+    tools/buildutil/store/gc.rs $
+    tools/buildutil/store/maintain.rs $
+    tools/buildutil/store/mod.rs $
+    tools/buildutil/store/register.rs $
+    tools/buildutil/store/remote.rs $
+    tools/buildutil/store/substitute.rs $
+    tools/buildutil/store/tests.rs $
+    tools/buildutil/term/mod.rs $
+    tools/buildutil/term/view.rs $
+    tools/buildutil/tools/mod.rs $
+    tools/buildutil/lib/crypto/sha256.rs $
+    tools/buildutil/sdk/wire.rs
+  mica_rlib = .buildutil/bootstrap/aarch64-apple-darwin/libmica.rlib
+  mica_dir = .buildutil/bootstrap/aarch64-apple-darwin
+build .buildutil/bootstrap/aarch64-apple-darwin/buildutil: selfhost .buildutil/bootstrap/aarch64-apple-darwin/minibuildutil .buildutil/bootstrap/aarch64-apple-darwin/rustc.vv FORCE
+  minibuildutil = .buildutil/bootstrap/aarch64-apple-darwin/minibuildutil
+  rustc_identity = .buildutil/bootstrap/aarch64-apple-darwin/rustc.vv
+  exec_host = aarch64-apple-darwin
+build .buildutil/bootstrap/x86_64-unknown-linux-gnu/rustc.vv: rustcid FORCE
+build .buildutil/bootstrap/x86_64-unknown-linux-gnu/inputcheck: inputcheckc tools/buildutil/inputcheck.rs | .buildutil/bootstrap/x86_64-unknown-linux-gnu/rustc.vv $
+    tools/buildutil/inputs/bootstrap.rs $
+    tools/buildutil/inputs/codec.rs $
+    tools/buildutil/inputs/content.rs $
+    tools/buildutil/source/filter.rs $
+    tools/buildutil/spec/toml.rs $
+    tools/buildutil/glob/mod.rs $
+    tools/buildutil/lib/crypto/sha256.rs
+build .buildutil/bootstrap/x86_64-unknown-linux-gnu/libmica.rlib: micac tools/buildutil/lib/mica/lib.rs | .buildutil/bootstrap/x86_64-unknown-linux-gnu/rustc.vv $
+    tools/buildutil/lib/mica/ast.rs $
+    tools/buildutil/lib/mica/eval.rs $
+    tools/buildutil/lib/mica/lexer.rs $
+    tools/buildutil/lib/mica/parser.rs $
+    tools/buildutil/lib/mica/tests.rs $
+    tools/buildutil/lib/mica/vercmp.rs
+build .buildutil/bootstrap/x86_64-unknown-linux-gnu/minibuildutil: minibuildutilc tools/buildutil/minibuildutil.rs | .buildutil/bootstrap/x86_64-unknown-linux-gnu/libmica.rlib .buildutil/bootstrap/x86_64-unknown-linux-gnu/rustc.vv $
+    tools/buildutil/crypto/crc.rs $
+    tools/buildutil/crypto/detseed.rs $
+    tools/buildutil/crypto/ed25519.rs $
+    tools/buildutil/crypto/mod.rs $
+    tools/buildutil/crypto/sha512.rs $
+    tools/buildutil/eval/cache.rs $
+    tools/buildutil/eval/graph.rs $
+    tools/buildutil/eval/mod.rs $
+    tools/buildutil/eval/ninja_emit.rs $
+    tools/buildutil/eval/observe.rs $
+    tools/buildutil/eval/plan/bootstrap.rs $
+    tools/buildutil/eval/plan/check.rs $
+    tools/buildutil/eval/plan/mod.rs $
+    tools/buildutil/eval/plan/tests.rs $
+    tools/buildutil/eval/plan/wire.rs $
+    tools/buildutil/events/mod.rs $
+    tools/buildutil/exec/build.rs $
+    tools/buildutil/exec/builder.rs $
+    tools/buildutil/exec/depinfo.rs $
+    tools/buildutil/exec/env.rs $
+    tools/buildutil/exec/inflate.rs $
+    tools/buildutil/exec/input_fetch.rs $
+    tools/buildutil/exec/jobserver.rs $
+    tools/buildutil/exec/json.rs $
+    tools/buildutil/exec/mod.rs $
+    tools/buildutil/exec/module.rs $
+    tools/buildutil/exec/output.rs $
+    tools/buildutil/exec/pool.rs $
+    tools/buildutil/exec/refscan.rs $
+    tools/buildutil/exec/report.rs $
+    tools/buildutil/exec/sandbox.rs $
+    tools/buildutil/exec/stage.rs $
+    tools/buildutil/exec/tests.rs $
+    tools/buildutil/exec/tokens.rs $
+    tools/buildutil/exec/trace.rs $
+    tools/buildutil/exec/untar.rs $
+    tools/buildutil/glob/mod.rs $
+    tools/buildutil/inputs/bootstrap.rs $
+    tools/buildutil/inputs/codec.rs $
+    tools/buildutil/inputs/content.rs $
+    tools/buildutil/inputs/mod.rs $
+    tools/buildutil/invocation/mod.rs $
+    tools/buildutil/log/mod.rs $
+    tools/buildutil/paths/mod.rs $
+    tools/buildutil/platform/mod.rs $
+    tools/buildutil/source/filehash.rs $
+    tools/buildutil/source/filter.rs $
+    tools/buildutil/source/git.rs $
+    tools/buildutil/source/mod.rs $
+    tools/buildutil/source/statcache.rs $
+    tools/buildutil/source/tests.rs $
+    tools/buildutil/source/tree.rs $
+    tools/buildutil/source/worktree.rs $
+    tools/buildutil/spec/address.rs $
+    tools/buildutil/spec/builders.rs $
+    tools/buildutil/spec/configres.rs $
+    tools/buildutil/spec/inputs.rs $
+    tools/buildutil/spec/kinds.rs $
+    tools/buildutil/spec/mod.rs $
+    tools/buildutil/spec/modules.rs $
+    tools/buildutil/spec/required_checks.rs $
+    tools/buildutil/spec/stages.rs $
+    tools/buildutil/spec/tables.rs $
+    tools/buildutil/spec/tests.rs $
+    tools/buildutil/spec/toml.rs $
+    tools/buildutil/state/mod.rs $
+    tools/buildutil/store/derivation.rs $
+    tools/buildutil/store/gc.rs $
+    tools/buildutil/store/maintain.rs $
+    tools/buildutil/store/mod.rs $
+    tools/buildutil/store/register.rs $
+    tools/buildutil/store/remote.rs $
+    tools/buildutil/store/substitute.rs $
+    tools/buildutil/store/tests.rs $
+    tools/buildutil/term/mod.rs $
+    tools/buildutil/term/view.rs $
+    tools/buildutil/tools/mod.rs $
+    tools/buildutil/lib/crypto/sha256.rs $
+    tools/buildutil/sdk/wire.rs
+  mica_rlib = .buildutil/bootstrap/x86_64-unknown-linux-gnu/libmica.rlib
+  mica_dir = .buildutil/bootstrap/x86_64-unknown-linux-gnu
+build .buildutil/bootstrap/x86_64-unknown-linux-gnu/buildutil: selfhost .buildutil/bootstrap/x86_64-unknown-linux-gnu/minibuildutil .buildutil/bootstrap/x86_64-unknown-linux-gnu/rustc.vv FORCE
+  minibuildutil = .buildutil/bootstrap/x86_64-unknown-linux-gnu/minibuildutil
+  rustc_identity = .buildutil/bootstrap/x86_64-unknown-linux-gnu/rustc.vv
+  exec_host = x86_64-unknown-linux-gnu
+build .buildutil/bootstrap/aarch64-unknown-linux-gnu/rustc.vv: rustcid FORCE
+build .buildutil/bootstrap/aarch64-unknown-linux-gnu/inputcheck: inputcheckc tools/buildutil/inputcheck.rs | .buildutil/bootstrap/aarch64-unknown-linux-gnu/rustc.vv $
+    tools/buildutil/inputs/bootstrap.rs $
+    tools/buildutil/inputs/codec.rs $
+    tools/buildutil/inputs/content.rs $
+    tools/buildutil/source/filter.rs $
+    tools/buildutil/spec/toml.rs $
+    tools/buildutil/glob/mod.rs $
+    tools/buildutil/lib/crypto/sha256.rs
+build .buildutil/bootstrap/aarch64-unknown-linux-gnu/libmica.rlib: micac tools/buildutil/lib/mica/lib.rs | .buildutil/bootstrap/aarch64-unknown-linux-gnu/rustc.vv $
+    tools/buildutil/lib/mica/ast.rs $
+    tools/buildutil/lib/mica/eval.rs $
+    tools/buildutil/lib/mica/lexer.rs $
+    tools/buildutil/lib/mica/parser.rs $
+    tools/buildutil/lib/mica/tests.rs $
+    tools/buildutil/lib/mica/vercmp.rs
+build .buildutil/bootstrap/aarch64-unknown-linux-gnu/minibuildutil: minibuildutilc tools/buildutil/minibuildutil.rs | .buildutil/bootstrap/aarch64-unknown-linux-gnu/libmica.rlib .buildutil/bootstrap/aarch64-unknown-linux-gnu/rustc.vv $
+    tools/buildutil/crypto/crc.rs $
+    tools/buildutil/crypto/detseed.rs $
+    tools/buildutil/crypto/ed25519.rs $
+    tools/buildutil/crypto/mod.rs $
+    tools/buildutil/crypto/sha512.rs $
+    tools/buildutil/eval/cache.rs $
+    tools/buildutil/eval/graph.rs $
+    tools/buildutil/eval/mod.rs $
+    tools/buildutil/eval/ninja_emit.rs $
+    tools/buildutil/eval/observe.rs $
+    tools/buildutil/eval/plan/bootstrap.rs $
+    tools/buildutil/eval/plan/check.rs $
+    tools/buildutil/eval/plan/mod.rs $
+    tools/buildutil/eval/plan/tests.rs $
+    tools/buildutil/eval/plan/wire.rs $
+    tools/buildutil/events/mod.rs $
+    tools/buildutil/exec/build.rs $
+    tools/buildutil/exec/builder.rs $
+    tools/buildutil/exec/depinfo.rs $
+    tools/buildutil/exec/env.rs $
+    tools/buildutil/exec/inflate.rs $
+    tools/buildutil/exec/input_fetch.rs $
+    tools/buildutil/exec/jobserver.rs $
+    tools/buildutil/exec/json.rs $
+    tools/buildutil/exec/mod.rs $
+    tools/buildutil/exec/module.rs $
+    tools/buildutil/exec/output.rs $
+    tools/buildutil/exec/pool.rs $
+    tools/buildutil/exec/refscan.rs $
+    tools/buildutil/exec/report.rs $
+    tools/buildutil/exec/sandbox.rs $
+    tools/buildutil/exec/stage.rs $
+    tools/buildutil/exec/tests.rs $
+    tools/buildutil/exec/tokens.rs $
+    tools/buildutil/exec/trace.rs $
+    tools/buildutil/exec/untar.rs $
+    tools/buildutil/glob/mod.rs $
+    tools/buildutil/inputs/bootstrap.rs $
+    tools/buildutil/inputs/codec.rs $
+    tools/buildutil/inputs/content.rs $
+    tools/buildutil/inputs/mod.rs $
+    tools/buildutil/invocation/mod.rs $
+    tools/buildutil/log/mod.rs $
+    tools/buildutil/paths/mod.rs $
+    tools/buildutil/platform/mod.rs $
+    tools/buildutil/source/filehash.rs $
+    tools/buildutil/source/filter.rs $
+    tools/buildutil/source/git.rs $
+    tools/buildutil/source/mod.rs $
+    tools/buildutil/source/statcache.rs $
+    tools/buildutil/source/tests.rs $
+    tools/buildutil/source/tree.rs $
+    tools/buildutil/source/worktree.rs $
+    tools/buildutil/spec/address.rs $
+    tools/buildutil/spec/builders.rs $
+    tools/buildutil/spec/configres.rs $
+    tools/buildutil/spec/inputs.rs $
+    tools/buildutil/spec/kinds.rs $
+    tools/buildutil/spec/mod.rs $
+    tools/buildutil/spec/modules.rs $
+    tools/buildutil/spec/required_checks.rs $
+    tools/buildutil/spec/stages.rs $
+    tools/buildutil/spec/tables.rs $
+    tools/buildutil/spec/tests.rs $
+    tools/buildutil/spec/toml.rs $
+    tools/buildutil/state/mod.rs $
+    tools/buildutil/store/derivation.rs $
+    tools/buildutil/store/gc.rs $
+    tools/buildutil/store/maintain.rs $
+    tools/buildutil/store/mod.rs $
+    tools/buildutil/store/register.rs $
+    tools/buildutil/store/remote.rs $
+    tools/buildutil/store/substitute.rs $
+    tools/buildutil/store/tests.rs $
+    tools/buildutil/term/mod.rs $
+    tools/buildutil/term/view.rs $
+    tools/buildutil/tools/mod.rs $
+    tools/buildutil/lib/crypto/sha256.rs $
+    tools/buildutil/sdk/wire.rs
+  mica_rlib = .buildutil/bootstrap/aarch64-unknown-linux-gnu/libmica.rlib
+  mica_dir = .buildutil/bootstrap/aarch64-unknown-linux-gnu
+build .buildutil/bootstrap/aarch64-unknown-linux-gnu/buildutil: selfhost .buildutil/bootstrap/aarch64-unknown-linux-gnu/minibuildutil .buildutil/bootstrap/aarch64-unknown-linux-gnu/rustc.vv FORCE
+  minibuildutil = .buildutil/bootstrap/aarch64-unknown-linux-gnu/minibuildutil
+  rustc_identity = .buildutil/bootstrap/aarch64-unknown-linux-gnu/rustc.vv
+  exec_host = aarch64-unknown-linux-gnu
+build .buildutil/bootstrap/x86_64-pc-windows-msvc/rustc.vv: rustcid FORCE
+build .buildutil/bootstrap/x86_64-pc-windows-msvc/inputcheck: inputcheckc tools/buildutil/inputcheck.rs | .buildutil/bootstrap/x86_64-pc-windows-msvc/rustc.vv $
+    tools/buildutil/inputs/bootstrap.rs $
+    tools/buildutil/inputs/codec.rs $
+    tools/buildutil/inputs/content.rs $
+    tools/buildutil/source/filter.rs $
+    tools/buildutil/spec/toml.rs $
+    tools/buildutil/glob/mod.rs $
+    tools/buildutil/lib/crypto/sha256.rs
+build .buildutil/bootstrap/x86_64-pc-windows-msvc/libmica.rlib: micac tools/buildutil/lib/mica/lib.rs | .buildutil/bootstrap/x86_64-pc-windows-msvc/rustc.vv $
+    tools/buildutil/lib/mica/ast.rs $
+    tools/buildutil/lib/mica/eval.rs $
+    tools/buildutil/lib/mica/lexer.rs $
+    tools/buildutil/lib/mica/parser.rs $
+    tools/buildutil/lib/mica/tests.rs $
+    tools/buildutil/lib/mica/vercmp.rs
+build .buildutil/bootstrap/x86_64-pc-windows-msvc/minibuildutil: minibuildutilc tools/buildutil/minibuildutil.rs | .buildutil/bootstrap/x86_64-pc-windows-msvc/libmica.rlib .buildutil/bootstrap/x86_64-pc-windows-msvc/rustc.vv $
+    tools/buildutil/crypto/crc.rs $
+    tools/buildutil/crypto/detseed.rs $
+    tools/buildutil/crypto/ed25519.rs $
+    tools/buildutil/crypto/mod.rs $
+    tools/buildutil/crypto/sha512.rs $
+    tools/buildutil/eval/cache.rs $
+    tools/buildutil/eval/graph.rs $
+    tools/buildutil/eval/mod.rs $
+    tools/buildutil/eval/ninja_emit.rs $
+    tools/buildutil/eval/observe.rs $
+    tools/buildutil/eval/plan/bootstrap.rs $
+    tools/buildutil/eval/plan/check.rs $
+    tools/buildutil/eval/plan/mod.rs $
+    tools/buildutil/eval/plan/tests.rs $
+    tools/buildutil/eval/plan/wire.rs $
+    tools/buildutil/events/mod.rs $
+    tools/buildutil/exec/build.rs $
+    tools/buildutil/exec/builder.rs $
+    tools/buildutil/exec/depinfo.rs $
+    tools/buildutil/exec/env.rs $
+    tools/buildutil/exec/inflate.rs $
+    tools/buildutil/exec/input_fetch.rs $
+    tools/buildutil/exec/jobserver.rs $
+    tools/buildutil/exec/json.rs $
+    tools/buildutil/exec/mod.rs $
+    tools/buildutil/exec/module.rs $
+    tools/buildutil/exec/output.rs $
+    tools/buildutil/exec/pool.rs $
+    tools/buildutil/exec/refscan.rs $
+    tools/buildutil/exec/report.rs $
+    tools/buildutil/exec/sandbox.rs $
+    tools/buildutil/exec/stage.rs $
+    tools/buildutil/exec/tests.rs $
+    tools/buildutil/exec/tokens.rs $
+    tools/buildutil/exec/trace.rs $
+    tools/buildutil/exec/untar.rs $
+    tools/buildutil/glob/mod.rs $
+    tools/buildutil/inputs/bootstrap.rs $
+    tools/buildutil/inputs/codec.rs $
+    tools/buildutil/inputs/content.rs $
+    tools/buildutil/inputs/mod.rs $
+    tools/buildutil/invocation/mod.rs $
+    tools/buildutil/log/mod.rs $
+    tools/buildutil/paths/mod.rs $
+    tools/buildutil/platform/mod.rs $
+    tools/buildutil/source/filehash.rs $
+    tools/buildutil/source/filter.rs $
+    tools/buildutil/source/git.rs $
+    tools/buildutil/source/mod.rs $
+    tools/buildutil/source/statcache.rs $
+    tools/buildutil/source/tests.rs $
+    tools/buildutil/source/tree.rs $
+    tools/buildutil/source/worktree.rs $
+    tools/buildutil/spec/address.rs $
+    tools/buildutil/spec/builders.rs $
+    tools/buildutil/spec/configres.rs $
+    tools/buildutil/spec/inputs.rs $
+    tools/buildutil/spec/kinds.rs $
+    tools/buildutil/spec/mod.rs $
+    tools/buildutil/spec/modules.rs $
+    tools/buildutil/spec/required_checks.rs $
+    tools/buildutil/spec/stages.rs $
+    tools/buildutil/spec/tables.rs $
+    tools/buildutil/spec/tests.rs $
+    tools/buildutil/spec/toml.rs $
+    tools/buildutil/state/mod.rs $
+    tools/buildutil/store/derivation.rs $
+    tools/buildutil/store/gc.rs $
+    tools/buildutil/store/maintain.rs $
+    tools/buildutil/store/mod.rs $
+    tools/buildutil/store/register.rs $
+    tools/buildutil/store/remote.rs $
+    tools/buildutil/store/substitute.rs $
+    tools/buildutil/store/tests.rs $
+    tools/buildutil/term/mod.rs $
+    tools/buildutil/term/view.rs $
+    tools/buildutil/tools/mod.rs $
+    tools/buildutil/lib/crypto/sha256.rs $
+    tools/buildutil/sdk/wire.rs
+  mica_rlib = .buildutil/bootstrap/x86_64-pc-windows-msvc/libmica.rlib
+  mica_dir = .buildutil/bootstrap/x86_64-pc-windows-msvc
+build .buildutil/bootstrap/x86_64-pc-windows-msvc/buildutil: selfhost .buildutil/bootstrap/x86_64-pc-windows-msvc/minibuildutil .buildutil/bootstrap/x86_64-pc-windows-msvc/rustc.vv FORCE
+  minibuildutil = .buildutil/bootstrap/x86_64-pc-windows-msvc/minibuildutil
+  rustc_identity = .buildutil/bootstrap/x86_64-pc-windows-msvc/rustc.vv
+  exec_host = x86_64-pc-windows-msvc
+build .buildutil/bootstrap/aarch64-pc-windows-msvc/rustc.vv: rustcid FORCE
+build .buildutil/bootstrap/aarch64-pc-windows-msvc/inputcheck: inputcheckc tools/buildutil/inputcheck.rs | .buildutil/bootstrap/aarch64-pc-windows-msvc/rustc.vv $
+    tools/buildutil/inputs/bootstrap.rs $
+    tools/buildutil/inputs/codec.rs $
+    tools/buildutil/inputs/content.rs $
+    tools/buildutil/source/filter.rs $
+    tools/buildutil/spec/toml.rs $
+    tools/buildutil/glob/mod.rs $
+    tools/buildutil/lib/crypto/sha256.rs
+build .buildutil/bootstrap/aarch64-pc-windows-msvc/libmica.rlib: micac tools/buildutil/lib/mica/lib.rs | .buildutil/bootstrap/aarch64-pc-windows-msvc/rustc.vv $
+    tools/buildutil/lib/mica/ast.rs $
+    tools/buildutil/lib/mica/eval.rs $
+    tools/buildutil/lib/mica/lexer.rs $
+    tools/buildutil/lib/mica/parser.rs $
+    tools/buildutil/lib/mica/tests.rs $
+    tools/buildutil/lib/mica/vercmp.rs
+build .buildutil/bootstrap/aarch64-pc-windows-msvc/minibuildutil: minibuildutilc tools/buildutil/minibuildutil.rs | .buildutil/bootstrap/aarch64-pc-windows-msvc/libmica.rlib .buildutil/bootstrap/aarch64-pc-windows-msvc/rustc.vv $
+    tools/buildutil/crypto/crc.rs $
+    tools/buildutil/crypto/detseed.rs $
+    tools/buildutil/crypto/ed25519.rs $
+    tools/buildutil/crypto/mod.rs $
+    tools/buildutil/crypto/sha512.rs $
+    tools/buildutil/eval/cache.rs $
+    tools/buildutil/eval/graph.rs $
+    tools/buildutil/eval/mod.rs $
+    tools/buildutil/eval/ninja_emit.rs $
+    tools/buildutil/eval/observe.rs $
+    tools/buildutil/eval/plan/bootstrap.rs $
+    tools/buildutil/eval/plan/check.rs $
+    tools/buildutil/eval/plan/mod.rs $
+    tools/buildutil/eval/plan/tests.rs $
+    tools/buildutil/eval/plan/wire.rs $
+    tools/buildutil/events/mod.rs $
+    tools/buildutil/exec/build.rs $
+    tools/buildutil/exec/builder.rs $
+    tools/buildutil/exec/depinfo.rs $
+    tools/buildutil/exec/env.rs $
+    tools/buildutil/exec/inflate.rs $
+    tools/buildutil/exec/input_fetch.rs $
+    tools/buildutil/exec/jobserver.rs $
+    tools/buildutil/exec/json.rs $
+    tools/buildutil/exec/mod.rs $
+    tools/buildutil/exec/module.rs $
+    tools/buildutil/exec/output.rs $
+    tools/buildutil/exec/pool.rs $
+    tools/buildutil/exec/refscan.rs $
+    tools/buildutil/exec/report.rs $
+    tools/buildutil/exec/sandbox.rs $
+    tools/buildutil/exec/stage.rs $
+    tools/buildutil/exec/tests.rs $
+    tools/buildutil/exec/tokens.rs $
+    tools/buildutil/exec/trace.rs $
+    tools/buildutil/exec/untar.rs $
+    tools/buildutil/glob/mod.rs $
+    tools/buildutil/inputs/bootstrap.rs $
+    tools/buildutil/inputs/codec.rs $
+    tools/buildutil/inputs/content.rs $
+    tools/buildutil/inputs/mod.rs $
+    tools/buildutil/invocation/mod.rs $
+    tools/buildutil/log/mod.rs $
+    tools/buildutil/paths/mod.rs $
+    tools/buildutil/platform/mod.rs $
+    tools/buildutil/source/filehash.rs $
+    tools/buildutil/source/filter.rs $
+    tools/buildutil/source/git.rs $
+    tools/buildutil/source/mod.rs $
+    tools/buildutil/source/statcache.rs $
+    tools/buildutil/source/tests.rs $
+    tools/buildutil/source/tree.rs $
+    tools/buildutil/source/worktree.rs $
+    tools/buildutil/spec/address.rs $
+    tools/buildutil/spec/builders.rs $
+    tools/buildutil/spec/configres.rs $
+    tools/buildutil/spec/inputs.rs $
+    tools/buildutil/spec/kinds.rs $
+    tools/buildutil/spec/mod.rs $
+    tools/buildutil/spec/modules.rs $
+    tools/buildutil/spec/required_checks.rs $
+    tools/buildutil/spec/stages.rs $
+    tools/buildutil/spec/tables.rs $
+    tools/buildutil/spec/tests.rs $
+    tools/buildutil/spec/toml.rs $
+    tools/buildutil/state/mod.rs $
+    tools/buildutil/store/derivation.rs $
+    tools/buildutil/store/gc.rs $
+    tools/buildutil/store/maintain.rs $
+    tools/buildutil/store/mod.rs $
+    tools/buildutil/store/register.rs $
+    tools/buildutil/store/remote.rs $
+    tools/buildutil/store/substitute.rs $
+    tools/buildutil/store/tests.rs $
+    tools/buildutil/term/mod.rs $
+    tools/buildutil/term/view.rs $
+    tools/buildutil/tools/mod.rs $
+    tools/buildutil/lib/crypto/sha256.rs $
+    tools/buildutil/sdk/wire.rs
+  mica_rlib = .buildutil/bootstrap/aarch64-pc-windows-msvc/libmica.rlib
+  mica_dir = .buildutil/bootstrap/aarch64-pc-windows-msvc
+build .buildutil/bootstrap/aarch64-pc-windows-msvc/buildutil: selfhost .buildutil/bootstrap/aarch64-pc-windows-msvc/minibuildutil .buildutil/bootstrap/aarch64-pc-windows-msvc/rustc.vv FORCE
+  minibuildutil = .buildutil/bootstrap/aarch64-pc-windows-msvc/minibuildutil
+  rustc_identity = .buildutil/bootstrap/aarch64-pc-windows-msvc/rustc.vv
+  exec_host = aarch64-pc-windows-msvc
+default bootstrap-select-host

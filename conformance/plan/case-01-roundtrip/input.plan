@@ -1,0 +1,95 @@
+buildutil-plan
+format: 2
+arch: x86_64
+build-host: x86_64-unknown-linux-musl
+filter: buildutilignore-v1
+filter-hash: 0101010101010101010101010101010101010101010101010101010101010101
+git-rev: abcdef123456
+git-dirty: false
+target: kernel
+bootstrap: x buildutil sha256:0202020202020202020202020202020202020202020202020202020202020202
+bootstrap: f tools/flake/main.rs sha256:0303030303030303030303030303030303030303030303030303030303030303
+drv bootstrap-seed
+arch: host-x86_64-unknown-linux-musl
+builder: untar
+argv: fixed-output:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+out: bin/
+out: lib/
+exec-tool: buildutil
+exec-env: BUILDUTIL_FIXED_SHA256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+exec-argv: buildutil
+exec-argv: untar
+exec-argv: {srcroot}/.buildutil/sources/seed/x86_64-unknown-linux-musl/bootstrap-seed.tar
+exec-argv: {out}
+exec-host-tool: true
+exec-allowed-refs: closure
+end
+drv host-cc
+arch: host-x86_64-unknown-linux-musl
+builder: script-dag
+tool: ninja=store:bootstrap-seed:bin/ninja
+tool: sh=store:bootstrap-seed:bin/sh
+dep: bootstrap-seed
+argv: ninja
+out: bin/
+exec-tool: ninja
+exec-extra-tool: sh
+exec-argv: ninja
+exec-host-tool: true
+exec-allowed-refs: closure
+exec-shell: sh
+exec-mount: /lib=bootstrap-seed:lib
+end
+drv kernel
+arch: x86_64
+builder: script-dag
+tool: cc=store:host-cc:bin/cc
+tool: nasm=store:host-cc:bin/nasm
+env: LC_ALL=C
+src: f kernite/src/lib.rs sha256:0404040404040404040404040404040404040404040404040404040404040404
+src: x tools/gen.sh sha256:0505050505050505050505050505050505050505050505050505050505050505
+srcdir: kernite/include tree:0606060606060606060606060606060606060606060606060606060606060606
+source-root: toolchain/llvm-project tree:0707070707070707070707070707070707070707070707070707070707070707
+source-overlay: {dep:headers}/include=kernite/include/generated
+dep: host-cc
+dep: bootstrap-seed
+config: KERNEL_STACK_SIZE=16384
+argv: sh
+plan: compile: cc cc obj_{stem}.o | -O2 -DNAME=a b | kernite/src/lib.rs
+out: kernite.o
+exec-tool: sh
+exec-extra-tool: cc
+exec-extra-tool: nasm
+exec-env: SOURCE_DATE_EPOCH=1
+exec-argv: sh
+exec-stage-dep: {dep:crt}/crt.o=crt.o
+exec-copy: {out}/kernite.o=lib/kernite.o
+exec-host-tool: false
+exec-allowed-ref: host-cc
+exec-shell: sh
+exec-mount: /lib=bootstrap-seed:lib
+exec-mount: /etc/ssl/certs=bootstrap-seed:etc/ssl/certs
+exec-version-flag: nasm=-v
+exec-substituter: host-cc:bin/curl
+xplan-compile
+xplan-compile-when: BUILD_KERNEL
+xplan-compile-kind: cc
+xplan-compile-tool: cc
+xplan-compile-flag: -O2
+xplan-compile-flag: -DNAME=a b
+xplan-compile-source: kernite/src/lib.rs
+xplan-compile-scan-dir: kernite/src
+xplan-compile-scan-ext: .rs
+xplan-compile-scan-exclude: arch/*
+xplan-compile-obj: obj_{path}.o
+xplan-end
+xplan-step
+xplan-step-when: 
+xplan-step-tool: ld.lld
+xplan-step-argv: -o
+xplan-step-argv: {out}/kernite
+xplan-step-argv: {objs}
+xplan-step-capture: link.log
+xplan-step-output: {out}/kernite
+xplan-end
+end

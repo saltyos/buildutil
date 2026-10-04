@@ -1,0 +1,15 @@
+buildutil-drv
+format: 5
+name: uapi-src
+arch: x86_64
+builder: bindgen
+tool: bindgen=sha256:aa;bindgen 0.72.0
+env: LC_ALL=C
+env: SOURCE_DATE_EPOCH=1
+src: kernite/include/uapi/bindgen.h=sha256:bb
+allowed-refs: none
+argv: bindgen
+argv: --use-core
+argv: --output
+argv: {out}/uapi.rs
+out: uapi.rs
