@@ -20,7 +20,6 @@ pub(crate) fn bootstrap_paths(repo_root: &Path) -> Result<Vec<String>, String> {
     let mut rels = vec![
         "buildutil".to_string(),
         "buildutil.toml".to_string(),
-        "buildutil.lock".to_string(),
         // The source-filter contract is loaded directly (not walk-tolerantly)
         // during plan emission, so the repo-free projection must carry it or the
         // container's native evaluation fails reading it; it also keeps the
@@ -33,6 +32,11 @@ pub(crate) fn bootstrap_paths(repo_root: &Path) -> Result<Vec<String>, String> {
         // The module wire, compiled into buildutil as `sdk_wire`.
         crate::paths::SDK_WIRE.to_string(),
     ];
+    // The lock pins the declared inputs, which the bootstrap does not build;
+    // a repository that has declared none has no lock to carry.
+    if repo_root.join("buildutil.lock").is_file() {
+        rels.push("buildutil.lock".to_string());
+    }
     collect_executor_sources(repo_root, crate::paths::BUILDUTIL, &mut rels)?;
     let doc = crate::spec::toml::parse_file(&repo_root.join("buildutil.toml"))?;
     let declarations = crate::inputs::codec::declarations(&doc)?;
