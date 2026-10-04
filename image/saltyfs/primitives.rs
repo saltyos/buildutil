@@ -305,12 +305,12 @@ pub mod chacha {
             // Split at bit 130: low = p0, p1, p2 & 3; high = the rest.
             let low2 = p2 & 3;
             let high = ((p2 >> 2) as u128) | ((p3 as u128) << 62) | ((p4 as u128) << 126);
-            // h = low + 5 * high.
+            // h = low + 5 * high; high < 2^125, so 5 * high fits 128 bits.
             let five = high * 5;
             let (l0, c) = p0.overflowing_add(five as u64);
             let (l1, c2) = p1.overflowing_add((five >> 64) as u64);
             let (l1, c3) = l1.overflowing_add(c as u64);
-            let l2 = low2 + (c2 as u64) + (c3 as u64) + ((five >> 128) as u64);
+            let l2 = low2 + (c2 as u64) + (c3 as u64);
             h = [l0, l1, l2];
         }
         // Final reduction: h may be up to ~2^130 + small; fold once more and
